@@ -1,103 +1,82 @@
-# MCP中文统计工具（HTTP版）
+# MCP 中文字符统计服务
 
-一个基于MCP（Model Context Protocol）协议的中文字符统计工具，可统计纯中文字符数量，支持 HTTP/Streamable 调用，兼容魔搭网页端。
+## 功能
+统计传入文本中的中文字符数量（不包含标点、空格、英文、数字等），并返回结果。  
+兼容魔搭 JSON-RPC 调用规范，适合 Streamable HTTP 部署。
 
----
+## 接口说明
 
-## 功能特性
+### 查询工具列表
+**GET** `/tools/list`  
+返回 MCP 提供的工具信息，示例：
 
-- ✅ 统计纯中文字符数量  
-- ✅ 自动过滤非中文字符（标点、空格、英文、数字等）  
-- ✅ 符合 MCP 协议标准  
-- ✅ 支持 HTTP/Streamable MCP 调用  
-
----
-
-## 快速开始
-
-### 安装依赖
-```bash
-pip install fastapi uvicorn pydantic
-启动 HTTP 服务
-# 克隆仓库
-git clone https://github.com/你的用户名/mcp-chinese-counter.git
-cd mcp-chinese-counter
-
-# 启动服务
-python MyMcpWrapper.py
-暴露公网（开发测试）
-
-如果需要魔搭网页调用，可用 ngrok 暴露端口：
-
-ngrok http 8000
-
-获取生成的公网 URL，例如：
-
-https://capillatus-agnatical-lemuel.ngrok-free.dev
-魔搭 MCP 配置（Streamable HTTP）
-
-在魔搭网页端添加 MCP 服务：
-
-{
-  "mcpServers": {
-    "ChineseCharCounter": {
-      "type": "streamable_http",
-      "url": "https://capillatus-agnatical-lemuel.ngrok-free.dev/tools/call/count_chinese_chars"
-    }
-  }
-}
-
-⚠️ 注意：url 必须是公网可访问地址，本地 localhost 无法被魔搭网页端访问
-
-工具说明
-count_chinese_chars
-
-统计输入文本中的纯中文字符数量。
-
-参数：
-
-text (string, 必需): 需要统计的文本
-
-返回值：
-
-纯中文字符数量（整数），通过 JSON-RPC result.content[0].text 返回
-
-示例：
-
-POST https://capillatus-agnatical-lemuel.ngrok-free.dev/tools/call/count_chinese_chars
-Body: {"text": "你好世界！Hello World 123"}
-
-返回：
+```json
 {
   "jsonrpc": "2.0",
   "result": {
-    "content": [
+    "tools": [
       {
-        "type": "text",
-        "text": "4"
+        "name": "count_chinese_chars",
+        "description": "统计纯中文字符数量",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "text": {
+              "type": "string",
+              "description": "需要统计的文本内容"
+            }
+          },
+          "required": ["text"]
+        }
       }
     ]
   }
 }
-使用示例（魔搭网页端）
+调用中文统计工具
 
-配置 MCP 服务（参考上面的 JSON）
+POST /tools/call/count_chinese_chars
+请求示例（JSON-RPC 格式）：
 
-在魔搭聊天中调用：
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "count_chinese_chars",
+    "arguments": {
+      "text": "这里是一段测试文字"
+    }
+  }
+}
 
-请使用中文统计工具计算：你好世界！Hello 123
+返回示例：
 
-返回结果：
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "8"
+      }
+    ]
+  }
+}
 
-4
-技术细节
+"text" 字段即返回的中文字符数量。
 
-使用 Unicode 范围 0x4E00-0x9FFF 识别中文字符
+注意事项
 
-符合 MCP JSON-RPC 2.0 标准
+支持 POST、DELETE、OPTIONS 请求，兼容魔搭部署检测。
 
-HTTP/Streamable MCP 可直接被魔搭网页端调用
+使用 Streamable HTTP 模式部署时，请在 JSON 配置中填写完整 URL，例如：
 
+https://你的域名/tools/call/count_chinese_chars
+
+返回内容遵循 JSON-RPC 规范，方便 DeepSeek 或其他模型调用。
+
+适合统计纯中文字符，不包含标点、空格、英文和数字。
 许可证
 
 MIT License
